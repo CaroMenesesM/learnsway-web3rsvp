@@ -1,118 +1,104 @@
-# Building on Fuel with Sway - Web3RSVP
+# README en español
+# **Crear una aplicación de Confirmación de asistencia (RSVP) a través de Sway en Fuel**
 
-In this workshop, we'll build a fullstack dapp on Fuel.
+En este taller vamos a crear una dapp completa (fullstack) en Fuel.
 
-This dapp is a bare-bones architectural reference for an event creation and management platform, similar to Eventbrite or Luma. Users can create a new event and RSVP to an existing event. This is the functionality we're going to build out in this workshop:
+Esta dapp es un referente arquitectónico básico para una plataforma de gestíon y creación de eventos, similar a Eventbrite o Lu.ma. Los usuarios podrán crear un nuevo evento y confirmar su asistencia (*hacer RSVP*) a un evento existente. Estas son las funcionalidades que vamos a crear en este taller:
 
-- Create a function in the smart contract to create a new event
-- Create a function in the smart contract to RSVP to an existing event
+* Crear una función en el contrato inteligente para crear un nuevo evento;
+* Crear una función en el contrato inteligente para confirmar asistencia (*hacer RSVP*) a un evento ya existente.
+ (#PRIMERA IMAGEN AQUI)
+ 
+ Vamos a descomponer las tareas individuales asociadas a cada función:
+ 
+ *Para poder crear una función que de origen a un nuevo evento, el programa debe ser capaz de manejar lo siguiente:*
+*  En nombre del evento, el usuario debe poder pasar una suma como depósito que los asistentes paguen para poder confirmar su asistencia al evento, y la capacidad máxima del evento.
+*  Una vez el usuario transfiere esta información, el programa debe crear un evento representado en una estructura de datos llamada `struct`.
+*  Como esta es una plataforma de eventos, nuestro programa debe ser capaz de manejar múltiples eventos a la vez. Por lo tanto, necesitamos un mecanismo que almacene múltiples eventos.
+*  Para almacenar múltiples eventos, vamos a usar un mapa hash, también conocido como tabla hash en otros lenguajes de programación. Este mapa hash asignará/"mapeará" `map` un identificador único que llamaremos `eventId` a un evento (que es representado como un struct).
 
-<img width="1723" alt="Screen Shot 2022-11-14 at 5 30 07 PM" src="https://user-images.githubusercontent.com/15346823/201781695-e3530429-46ad-40ea-96d2-00d6e8f27ed5.png">
+*Para crear una función que maneje la confirmación de asistencia a un evento de un usuario determinado, nuestro programa deberá ser capaz de manejar lo siguiente:*
+* Debemos tener un mecanismo que identifique el evento cuya asistencia el usuario quiere confirmar.
 
-Let's break down the tasks associated with each function:
+Algunos recursos que pueden ser útiles:
+*  La guía de fuel
+*  La guía de Sway
+*  El Discord de fuel - para obtener ayuda.
 
-_In order to create a function to create a new event, the program will have to be able to handle the following:_
+# **Instalación**
 
-- the user should pass in the name of the event, a deposit amount for attendees to pay to be able to RSVP to the event, and the max capacity for the event.
-- Once a user passes this information in, our program should create an event, represented as a data structure called a `struct`.
-- Because this is an events platform, our program should be able to handle multiple events at once. Therefore, we need a mechanism to store multiple events.
-- To store multiple events, we will use a hash map, someimtes known as a hash table in other programming languages. This hash map will `map` a unique identifier, which we'll call an `eventId`, to an event (that is represented as a struct).
+1. Instale `cargo` utilizando [rustup](https://www.rust-lang.org/tools/install)
 
-_In order to create a function to handle a user RSVP'ing, or confirming their attendance to the event, our program will have to be able to handle the following_
+Mac y Linux:
+`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
 
-- We should have a mechsnism to identify the event that the user wants to rsvp to
+2. Compruebe que la configuración esté correcta:
+```
+$ cargo --version
+cargo 1.62.0
+```
 
-_Some resources that may be helpful:_
+3. Instale `forc` utilizando [fuelup](https://fuellabs.github.io/sway/v0.18.1/introduction/installation.html#installing-from-pre-compiled-binaries)
 
-- [Fuel Book](https://fuellabs.github.io/fuel-docs/master/)
-- [Sway Book](https://fuellabs.github.io/sway/v0.19.2/)
-- [Fuel discord](discord.gg/fuelnetwork) - get help
+Mac y Linux:
+```
+curl --proto '=https' --tlsv1.2 -sSf \
+https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
+```
 
-## Installation
+5. Compruebe que la configuración esté correcta:
+```
+$ forc --version
+forc 0.26.0
+```
 
-1. Install `cargo` using [`rustup`](https://www.rust-lang.org/tools/install)
+## **Editor de código**
+Puede utilizar el editor que prefiera.
+* [Plugin/complemento para VSCode](https://marketplace.visualstudio.com/items?itemName=FuelLabs.sway-vscode-plugin)
+* [Resaltado de vim](https://github.com/FuelLabs/sway.vim)
 
-   Mac and Linux:
 
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   ```
+# **Pasos iniciales**
+Esta guía orientará a los desarrolladores para poder redactar un contrato inteligente en el lenguaje Sway, realizar una prueba sencilla, desplegar el contrato en Fuel y crear una interfaz/frontend.
 
-2. Check for correct setup:
+Antes de empezar, puede ser útil comprender la terminología que será usada a lo largo de la documentación y cómo se relaciona entre si:
 
-   ```bash
-   $ cargo --version
-   cargo 1.62.0
-   ```
+* **Fuel**: la cadena de bloques de Fuel.
+* **FuelVM**: la máquina virtual que impulsa a Fuel.
+* **Sway**: el lenguaje específico de dominio diseñado para FuelVM; está inspirado en Rust.
+* **Forc**: el sistema de compilación y administrador de paquetes para Sway, similar a Cargo en el caso de Rust.
 
-3. Install `forc` using [`fuelup`](https://fuellabs.github.io/sway/v0.18.1/introduction/installation.html#installing-from-pre-compiled-binaries)
+## **Entendiendo los tipos de programas de Sway**
+Hay cuatro tipos de programas de Sway:
 
-   Mac and Linux:
+* `contract` (*contrato*)
+* `predicate` (*predicado*)
+* `script` (*script*)
+* `library` (*biblioteca*)
 
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf \
-   https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
-   ```
+Los contratos, los predicados y los scripts pueden producir objetos utilizables en la cadena de bloques, mientras que una biblioteca es simplemente un proyecto diseñado para la reutilización de código y no se puede desplegar directamente.
 
-4. Check for correct setup:
+Las principales características de un contrato inteligente que lo diferencian de los scripts o predicados son: que aquel es invocable y posee un estado activamente.
 
-   ```bash
-   $ forc --version
-   forc 0.26.0
-   ```
+Un script es un código de *bytes* ejecutable en la cadena que puede invocar contratos específicos para realizar alguna tarea. No tiene la propiedad de ningún recurso y no puede ser invocado por un contrato.
 
-### Editor
+# **Crear un nuevo proyecto en Fuel**
 
-You are welcome to use your editor of choice.
+Comience creando una nueva carpeta vacía. La llamaremos `Web3RSVP`
 
-- [VSCode plugin](https://marketplace.visualstudio.com/items?itemName=FuelLabs.sway-vscode-plugin)
-- [Vim highlighting](https://github.com/FuelLabs/sway.vim)
+## **Creación del contrato**
 
-## Getting Started
-
-This guide will walk developers through writing a smart contract in Sway, a simple test, deploying to Fuel, and building a frontend.
-
-Before we begin, it may be helpful to understand terminology that will used throughout the docs and how they relate to each other:
-
-- **Fuel**: the Fuel blockchain.
-- **FuelVM**: the virtual machine powering Fuel.
-- **Sway**: the domain-specific language crafted for the FuelVM; it is inspired by Rust.
-- **Forc**: the build system and package manager for Sway, similar to Cargo for Rust.
-
-## Understand Sway Program Types
-
-There are four types of Sway programs:
-
-- `contract`
-- `predicate`
-- `script`
-- `library`
-
-Contracts, predicates, and scripts can produce artifacts usable on the blockchain, while a library is simply a project designed for code reuse and is not directly deployable.
-
-The main features of a smart contract that differentiate it from scripts or predicates are that it is callable and stateful.
-
-A script is runnable bytecode on the chain which can call contracts to perform some task. It does not represent ownership of any resources and it cannot be called by a contract.
-
-## Create a new Fuel project
-
-**Start by creating a new, empty folder. We'll call it `Web3RSVP`.**
-
-### Writing the Contract
-
-Then with `forc` installed, create a project inside of your `Web3RSVP` folder:
-
-```sh
+Luego, con `forc` instalado, cree un proyecto de contrato dentro de su carpeta `Web3RSVP`:
+```
 $ cd Web3RSVP
 $ forc new eventPlatform
 To compile, use `forc build`, and to run tests use `forc test`
 
 ---
 ```
+Aquí está el proyecto inicializado por `Forc`:
 
-Here is the project that `Forc` has initialized:
-
-```console
+```
 $ tree Web3RSVP
 eventPlatform
 ├── Cargo.toml
@@ -123,16 +109,15 @@ eventPlatform
     └── harness.rs
 ```
 
-## Defining the ABI
+# **Definiendo la IBA Interfaz binaria de aplicaciones (ABI, por sus siglas en inglés)**
 
-First, we'll define the ABI. An ABI defines an interface, and there is no function body in the ABI. A contract must either define or import an ABI declaration and implement it. It is considered best practice to define your ABI in a separate library and import it into your contract because this allows callers of the contract to import and use the ABI in scripts to call your contract.
+Primero, definiremos la IBA. La IBA define una interfaz y la función no tiene contenido en la IBA. El contrato debe definir o importar una declaración IBA e implementarla. Se considera una buena práctica definir su IBA en una biblioteca separada e importarla a su contrato porque esto permite a los invocadores del contrato importar y usar la IBA en scripts para invocar su contrato.
 
-To define the ABI as a library, we'll create a new file in the `src` folder. Create a new file named `event_platform.sw`
+Para definir la IBA como biblioteca, crearemos un nuevo archivo en la carpeta `src`. Cree un nuevo archivo llamado `event_platform.sw`
 
-Here is what your project structure should look like now:
-Here is the project that `Forc` has initialized:
+Así es como se debe ver su estructura del proyecto hasta ahora: Aquí está el proyecto inicializado por `Forc`:
 
-```console
+```
 eventPlatform
 ├── Cargo.toml
 ├── Forc.toml
@@ -143,9 +128,9 @@ eventPlatform
     └── harness.rs
 ```
 
-Add the following code to your ABI file, `event_platform.sw`:
+Agregue el siguiente código a su archivo de IBA, `event_platform.sw`:
 
-```rust
+```
 library event_platform;
 
 use std::{
@@ -172,10 +157,9 @@ pub struct Event {
 }
 
 ```
+Ahora, en el archivo `main.sw` implementaremos estas funciones. Aquí es en donde vamos a escribir el cuerpo de las funciones. Así es como se debe ver su archivo `main.sw` hasta ahora:
 
-Now, in the `main.sw` file, we'll implement these functions. This is where you will write out the function bodies. Here is what your `main.sw` file should look like:
-
-```rust
+```
 contract;
 
 dep event_platform;
@@ -252,147 +236,129 @@ impl eventPlatform for Contract {
 }
 ```
 
-### Build the Contract
+## **Construir el contrato**
 
-From inside the `web3rsvp/eventPlatform` directory, run the following command to build your contract:
+Desde el interior del directorio `web3rsvp/eventPlatform` ejecute el siguiente comando para construir su contrato:
 
-```console
+```
 $ forc build
   Compiled library "core".
   Compiled library "std".
   Compiled contract "counter_contract".
   Bytecode size is 224 bytes.
 ```
+## **Desplegar el contrato**
+Ahora es momento de desplegar el contrato en la red de pruebas (*testnet*). Le enseñaremos cómo hacerlo usando `forc` desde la línea de comandos, pero también puede hacerlo usando el [SDK de Rust](https://github.com/FuelLabs/fuels-rs#deploying-a-sway-contract) o el [SDK de TypeScript](https://github.com/FuelLabs/fuels-ts/#deploying-contracts).
 
-### Deploy the Contract
+Para poder desplegar un contrato, necesita tener una billetera para firmar la transacción y saldo para pagar el gas. Primero, crearemos una billetera.
 
-It's now time to deploy the contract to the testnet. We will show how to do this using `forc` from the command line, but you can also do it using the [Rust SDK](https://github.com/FuelLabs/fuels-rs#deploying-a-sway-contract) or the [TypeScript SDK](https://github.com/FuelLabs/fuels-ts/#deploying-contracts).
+### **Instale la interfaz de línea de comando (CLI, por sus siglas en inglés) de la billetera**
+Siga [estos pasos para configurar una billetera y crear una cuenta](https://github.com/FuelLabs/forc-wallet#forc-wallet).
 
-In order to deploy a contract, you need to have a wallet to sign the transaction and coins to pay for gas. First, we'll create a wallet.
+Después de escribir una contraseña, asegúrese de guardar la frase mnemónica que se produce.
 
-### Install the Wallet CLI
+Con esto, obtendrá una dirección de Fuel que se ve así: `fuel1efz7lf36w9da9jekqzyuzqsfrqrlzwtt3j3clvemm6eru8fe9nvqj5kar8.` Guarde esta dirección, ya que la necesitará para firmar las transacciones cuando despleguemos el contrato.
 
-Follow [these steps to set up a wallet and create an account](https://github.com/FuelLabs/forc-wallet#forc-wallet).
+### **Obtenga fondos en la *testnet***
+Con la dirección de su cuenta/billetera, diríjase al [grifo de la *testnet*](https://faucet-beta-1.fuel.network/) para recibir fondos en su billetera.
 
-After typing in a password, be sure to save the mnemonic phrase that is output.
-
-With this, you'll get a fuel address that looks something like this: `fuel1efz7lf36w9da9jekqzyuzqsfrqrlzwtt3j3clvemm6eru8fe9nvqj5kar8`. Save this address as you'll need it to sign transactions when we deploy the contract.
-
-#### Get Testnet Coins
-
-With your account address in hand, head to the [testnet faucet](https://faucet-beta-1.fuel.network/) to get some coins sent to your wallet.
-
-## Deploy To Testnet
-
-Now that you have a wallet, you can deploy with `forc deploy` and passing in the testnet endpoint like this:
+### **Desplegando a la *Testnet***
+Ahora que tiene una billetera, puede desplegar con `forc deploy` y pasar por el *endpoint* de la *testnet*, de la siguiente manera:
 
 `forc deploy --url https://node-beta-1.fuel.network/graphql --gas-price 1`
 
-> **Note**
-> We set the gas price to 1. Without this flag, the gas price is 0 by default and the transaction will fail.
+**Nota:** Debemos establecer el precio del gas en 1. Sin esto, el precio por defecto del gas es 0 y la transacción fallará.
 
-The terminal will ask for the address of the wallet you want to sign this transaction with, paste in the address you saved earlier, it looks like this: `fuel1efz7lf36w9da9jekqzyuzqsfrqrlzwtt3j3clvemm6eru8fe9nvqj5kar8`
+La terminal solicitará la dirección de la billetera con la que usted quiere firmar esta transacción. Copie la dirección que guardó en pasos anteriores al crear la billetera, la que se ve así:
 
-The terminal will output your contract id. Be sure to save this as you will need it to build a frontend with the Typescript SDK.
+`fuel1efz7lf36w9da9jekqzyuzqsfrqrlzwtt3j3clvemm6eru8fe9nvqj5kar8`
 
-The terminal will output a `transaction id to sign` and prompt you for a signature. Open a new terminal tab and view your accounts by running `forc wallet list`. If you followed these steps, you'll notice you only have one account, `0`.
+La terminal mostrará el `Contract id`. Asegúrese de guardar esto, ya que lo necesitará para crear la interfaz/el *frontend* con la SDK de Typescript.
 
-Grab the `transaction id` from your other terminal and sign with a specified account by running the following command:
+La terminal mostrará un identificador de transacción para firmar, `transaction id to sign` y le pedirá la firma. Abra una nueva pestaña en la terminal y revise sus cuentas ejecutando el comando `forc wallet list`. Si ha seguido estos pasos, verá que sólo tiene una cuenta, `0`.
 
-```console
-forc wallet sign` + `[transaction id here, without brackets]` + `[the account number, without brackets]`
+Tome el `transaction id` desde la otra pestaña de la terminal y firme con su cuenta ejecutando el siguiente comando:
+
+`forc wallet sign` + `[transaction id here, without brackets]` + `[the account number, without brackets]`
+
+Su comando deberá verse así:
+
 ```
-
-Your command should look like this:
-
-```console
 $ forc wallet sign 16d7a8f9d15cfba1bd000d3f99cd4077dfa1fce2a6de83887afc3f739d6c84df 0
 Please enter your password to decrypt initialized wallet's phrases:
 Signature: 736dec3e92711da9f52bed7ad4e51e3ec1c9390f4b05caf10743229295ffd5c1c08a4ca477afa85909173af3feeda7c607af5109ef6eb72b6b40b3484db2332c
 ```
 
-Enter your password when prompted, and you'll get back a `signature`. Save that signature, and return to your other terminal window, and paste that in where its prompting you to `provide a signature for this transaction`.
+Ingrese su contraseña cuando se la soliciten y obtendrá una `signature`. Guarde dicha firma, regrese a su otra ventana de la terminal, y péguela en donde se la solicitan: `provide a signature for this transaction`
 
-Finally, you will get back a `TransactionId` to confirm your contract was deployed. With this ID, you can head to the [block explorer](https://fuellabs.github.io/block-explorer-v2/) and view your contract.
+Finalmente, recibirá una `TransactionId` que confirma que su contrato se desplegó exitosamente. Con este ID, puede dirigirse al [explorador de bloques](https://fuellabs.github.io/block-explorer-v2/) y ver su contrato.
 
-> **Note**
-> You should prefix your `TransactionId` with `0x` to view it in the block explorer
+**Nota:** Para poder ver la transacción en el explorador de bloques, debe agregar `0x` como prefijo de su `TransactionID`
 
-## Create a Frontend to Interact with Contract
 
-Now we are going to
+## **Crear una interfaz/un frontend que interactúe con el Contrato**
+Ahora, vamos a:
+**1. Inicializar un projecto React.
+2. Instalar las dependencias del SDK de `fuels`.
+3. Modificar la App.
+4. Ejecutar nuestro proyecto.**
 
-1. **Initialize a React project.**
-2. **Install the `fuels` SDK dependencies.**
-3. **Modify the App.**
-4. **Run our project.**
+### **Inicializar un projecto React**
+Para dividir mejor nuestro proyecto, creemos una nueva carpeta llamada `frontend` e inicialicemos nuestro proyecto desde la misma.
 
-## Initialize a React project
-
-To split better our project let's create a new folder `frontend` and initialize our project inside it.
-
-In the terminal, go back up one directory and initialize a react project using [`Create React App`](https://create-react-app.dev/).
-
-```console
+En la terminal, devuélvase un nivel en el directorio e inicialice un proyecto React usando la [App *Create React*](https://create-react-app.dev/)
+```
 $ cd ..
 $ npx create-react-app frontend --template typescript
-Success! Created frontend at Fuel/Web3RSVP/frontend
+Success! Created frontend at Fuel/WEB3RSVP/frontend
 ```
+Ahora debe tener la carpeta externa, `Web3RSVP`, con dos carpetas en su interior: `frontend` Y `rsvpContract`
 
-You should now have your outer folder, `Web3RSVP`, with two folders inside: `frontend` and `rsvpContract`
+# **Translator's note: Cami, for some reason this image appears to have a broken link**
 
-![project folder structure](./images/quickstart-folder-structure.png)
+### Instale las dependencias del SDK fuels
+En este paso, necesitamos instalar 3 dependencias para el proyecto:
 
-### Install the `fuels` SDK dependencies
+1. `fuels`: El paquete sombrilla que incluye todas las herramientas principales: `Wallet`, `Contracts`, `Providers` y otros.
+2. `fuelchain`: Fuelchain es el generador de IBA en TypeScript.
+3. `typechain-target-fuels`: El *Fuelchain Target* es el interpretador específico para la especificación de la IBA.
 
-On this step we need to install 3 dependencies for the project:
+IBA significa Interfaz Binaria de Aplicaciones. Las IBAs le facilitan a la aplicación la interfaz para interactuar con la Máquina Virtual; en otras palabras, proporcionan información a la App tal como qué métodos tiene un contrato, qué parámetros, tipos esperados, etc...
 
-1. `fuels`: The umbrella package that includes all the main tools; `Wallet`, `Contracts`, `Providers` and more.
-2. `fuelchain`: Fuelchain is the ABI TypeScript generator.
-3. `typechain-target-fuels`: The Fuelchain Target is the specific interpreter for the [Fuel ABI Spec](https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md).
+## **Instalación**
 
-> ABI stands for Application Binary Interface. ABI's inform the application the interface to interact with the VM, in other words, they provide info to the APP such as what methods a contract has, what params, types it expects, etc...
+Ingrese a la carpeta `frontend`, e instale las siguientes dependencias:
 
-### Install
-
-Move into the `frontend` folder, then install the dependencies:
-
-```console
 $ cd frontend
 $ npm install fuels --save
 added 65 packages, and audited 1493 packages in 4s
 $ npm install fuelchain typechain-target-fuels --save-dev
 added 33 packages, and audited 1526 packages in 2s
+
+## **Generando las clases de contratos**
+
+Para facilitar la interacción con nuestro contrato, utilizamos `fuelchain` para interpretar el resultado de IBA JSON de nuestro contrato. Este JSON fue creado en el momento en que ejecutamos `forc build` para compilar nuestro Contrato de Sway en forma binaria.
+
+Si puede ver la carpeta `Web3RSVP/rsvpContract/out` podrá ver el IBA JSON allí. Si quiere aprender más, lea las [especificaciones de IBA aquí:](https://fuellabs.github.io/fuel-specs/master/protocol/abi/index.html).
+
+Al interior del directorio `Web3RSVP/frontend `ejecute:
+
 ```
-
-### Generating contract types
-
-To make it easier to interact with our contract we use `fuelchain` to interpret the output ABI JSON from our contract. This JSON was created on the moment we executed the `forc build` to compile our Sway Contract into binary.
-
-If you see the folder `Web3RSVP/rsvpContract/out` you will be able to see the ABI JSON there. If you want to learn more, read the [ABI Specs here](https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md).
-
-Inside `Web3RSVP/frontend` run;
-
-```console
 $ npx fuelchain --target=fuels --out-dir=./src/contracts ../rsvpContract/out/debug/*-abi.json
 Successfully generated 4 typings!
 ```
+Ahora deberá poder encontrar una nueva carpeta `Web3RSVP/frontend/src/contracts`. Esta carpeta fue auto-generada por nuestro comando `fuelchain`. Estos archivos abstraen el trabajo que se requiere para crear una instancia de contrato, y generar una interfaz completa en TypeScript para interactuar con el Contrato, facilitando el desarrollo.
 
-Now you should be able to find a new folder `Web3RSVP/frontend/src/contracts`. This folder was auto-generated by our `fuelchain` command, this files abstract the work we would need to do to create a contract instance, and generate a complete TypeScript interface to the Contract, making easy to develop.
+### **Crear una billetera (de nuevo)**
+Para interactuar con la red de Fuel, debemos enviar transacciones firmadas con suficientes fondos para cubrir los gastos que conlleva usar la red. El SDK de TypeScript de Fuel no soporta integraciones con billeteras actualmente, lo que hace que debamos mantener una billetera no segura al interior de la WebApp utilizando una llave privada.
 
-### Create A Wallet (Again)
+**Nota**: Esto sólo debe hacerse con propósitos de desarrollo. Nunca exponga una aplicación web con una llave privada al interior. La billetera Fuel está en constante desarrollo, siga su progreso [aquí](https://github.com/FuelLabs/fuels-wallet).
 
-For interacting with the fuel network we have to submit signed transactions with enough funds to cover network fees. The Fuel TS SDK don't currently support Wallet integrations, requiring us to have a non-safe wallet inside the WebApp using a privateKey.
+**Nota**: El equipo está trabajando para simplificar el proceso de crear una billetera y eliminar la necesidad de crearla dos vces. Esté atento a estas actualizaciones.
 
-> **Note**
-> This should be done only for development purpose. Never expose a web app with a private key inside. The Fuel Wallet is in active development, follow the progress [here](https://github.com/FuelLabs/fuels-wallet).
->
-> **Note**
-> The team is working to simplify the process of creating a wallet, and eliminate the need to create a wallet twice. Keep an eye out for these updates.
+En la raíz del proyecto *Frontend* cree un archivo llamado `createWallet.js`
 
-In the root of the frontend project create a file, createWallet.js
-
-```js
+```
 const { Wallet } = require("fuels");
 
 const wallet = Wallet.generate();
@@ -401,31 +367,27 @@ console.log("address", wallet.address.toString());
 console.log("private key", wallet.privateKey);
 ```
 
-In a terminal, run the following command:
+En la terminal, ejecute el siguiente comando:
 
-```console
+```
 $ node createWallet.js
 address fuel160ek8t7fzz89wzl595yz0rjrgj3xezjp6pujxzt2chn70jrdylus5apcuq
 private key 0x719fb4da652f2bd4ad25ce04f4c2e491926605b40e5475a80551be68d57e0fcb
 ```
+**Nota:** Debe usar la dirección y llave privada generados.
 
-> **Note**
-> You should use the generated address and private key.
+Guarde la dirección generada y la llave privada, pues la necesitará luego para establecerla como un valor del string para una variable `WALLET_SECRET` en su archivo `App.tsx`. Más información al respecto a continuación.
 
-Save the generated address and private key. You will need the private key later to set it as a string value for a variable `WALLET_SECRET` in your `App.tsx` file. More on that below.
+Primero, tome la dirección de su billetera y utilícela para recibir fondos del [grifo de la *Testnet*.](https://faucet-beta-1.fuel.network/)
 
-First, take the address of your wallet and use it to get some coins from [the testnet faucet](https://faucet-beta-1.fuel.network/).
+Ahora está listo para crear y publicar ⛽
 
-Now you're ready to build and ship ⛽
+### **Modificar la App**
+Al interior de la carpeta `frontend`, vamos a agregar código que interactúe con nuestro contrato. Lea los comentarios para entender mejor y más fácilmente las partes de la App. 
 
-### Modify the App
+Cambie el archivo `Web3RSVP/frontend/src/App.tsx` a: 
 
-Inside the `frontend` folder let's add code that interacts with our contract.
-Read the comments to help you understand the App parts.
-
-Change the file `Web3RSVP/frontend/src/App.tsx` to:
-
-```js
+```
 import React, { useEffect, useState } from "react";
 import { Wallet } from "fuels";
 import "./App.css";
@@ -584,13 +546,13 @@ return (
 }
 ```
 
-### Run your project
 
-Now it's time to have fun run the project on your browser;
+# Ejecute su proyecto
+Ahora es hora de divertirse, ejecute el proyecto en su navegador.
 
-Inside `Web3RSVP/frontend` run;
+Desde el interior del directorio `Web3RSVP/frontend `ejecute:
 
-```console
+```
 $ npm start
 Compiled successfully!
 
@@ -602,24 +564,21 @@ You can now view frontend in the browser.
 Note that the development build is not optimized.
 To create a production build, use npm run build.
 ```
+✨⛽✨**¡Felicitaciones! Ha completado su primera DApp en Fuel**✨⛽✨
 
-#### ✨⛽✨ Congrats you have completed your first DApp on Fuel ✨⛽✨
+![](https://i.imgur.com/6ozpQcI.png)
 
-![Screen Shot 2022-10-06 at 10 08 26 AM](https://user-images.githubusercontent.com/15346823/194375753-4c5de0cd-eaf3-4ba7-8e25-efe8e082fa93.png)
+Mencióname en twitter [@camiinthisthang](https://twitter.com/camiinthisthang) y cuéntame que acabas de crear una dapp en Fuel, podrás ser invitado a un grupo privado de creadores, a la siguiente cena de Fuel, obtener acceso Alfa al proyecto o algo más 👀.
 
-Tweet me [@camiinthisthang](https://twitter.com/camiinthisthang) and let me know you just built a dapp on Fuel, you might get invited to a private group of builders, be invited to the next Fuel dinner, get alpha on the project, or something 👀.
+**Nota:** Para enviar/hacer push de este proyecto a un repositorio de Github, tebe remover el archivo `.git` que es creado automáticamente al usar el comando `create-react-app`. Puede hacerlo al ejecutar el siguiente comando en `Web3RSVP/frontend`: `Rm -rf .git`. Entonces, ya podrá agregar, hacer commit y enviar estos archivos.
 
-> Note: To push this project up to a github repo, you'll have to remove the `.git` file that automatically gets created with `create-react-app`. You can do that by running the following command in `Web3RSVP/frontend`: `Rm -rf .git`. Then, you'll be good to add, commit, and push these files.
+# **Actualizando el contrato**
+Si hace cambios a su contrato, aquí están los pasos que debe seguir para mantener sincronizados su interfaz/*frontend* y contrato:
 
-### Updating The Contract
+* En su directorio de Contrato, ejecute `forc build`.
+* En su directorio de Contrato, vuelva a desplegar el contrato al ejecutar el siguiente comando y siguiendo los mismos pasos de arriba para firmar la transacción con su billetera: `forc deploy --url https://node-beta-1.fuel.network/graphql --gas-price 1`
+* En su directorio frontend, vuelva a ejecutar el siguiente comando: `npx fuelchain --target=fuels --out-dir=./src/contracts ../rsvpContract/out/debug/*-abi.json`
+* En su directorio frontend, actualice el identificador de contrato (contract ID) en su archivo `App.tsx`
 
-If you make changes to your contract, here are the steps you should take to get your frontend and contract back in sync:
-
-- In your contract directory, run `forc build`
-- In your contract directory, redeploy the contract by running this command and following the same steps as above to sign the transaction with your wallet: `forc deploy --url https://node-beta-1.fuel.network/graphql --gas-price 1`
-- In your frontend directory, re-run this command: `npx fuelchain --target=fuels --out-dir=./src/contracts ../rsvpContract/out/debug/*-abi.json`
-- In your frontend directory, update the contract ID in your `App.tsx` file
-
-## Need Help?
-
-Head over to the [Fuel discord](https://discord.com/invite/fuelnetwork) to get help.
+# **¿Necesita ayuda?**
+Diríjase al [Discord de Fuel](https://discord.com/invite/fuelnetwork) para obtener ayuda.
